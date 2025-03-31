@@ -1,0 +1,37 @@
+# Set the folder path
+$folderPath = "C:\Your\Folder\Path"
+$outputFile = "C:\Your\Output\output.csv"
+
+# Create an array to hold results
+$results = @()
+
+# Get all .txt files in the folder
+Get-ChildItem -Path $folderPath -Filter *.txt | ForEach-Object {
+    $file = $_
+    $filePrefix = $file.BaseName.Substring(0, 8)
+    
+    $mysqlId = ""
+    $dateTime = ""
+
+    # Read the file line by line
+    Get-Content $file.FullName | ForEach-Object {
+        if ($_ -match "mysql id\s*:\s*(\d+)") {
+            $mysqlId = $matches[1]
+        }
+        elseif ($_ -match "(\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}:\d{2})") {
+            $dateTime = $matches[1]
+        }
+    }
+
+    # Add to results
+    $results += [PSCustomObject]@{
+        FilePrefix = $filePrefix
+        MySQL_ID   = $mysqlId
+        DateTime   = $dateTime
+    }
+}
+
+# Export to CSV
+$results | Export-Csv -Path $outputFile -NoTypeInformation
+
+Write-Output "Done! Output saved to $outputFile"
