@@ -1,18 +1,20 @@
 $libA = "C:\pepperware-2.0-SNAPSHOT\lib"
 $libB = "C:\pepperware-2.0-SNAPSHOT\new_lib"
 
-# Get filenames as lowercase, trimmed strings
+# Get cleaned, lowercase file names
 $jarA = Get-ChildItem -Path $libA -Filter *.jar | ForEach-Object { $_.Name.Trim().ToLower() }
 $jarB = Get-ChildItem -Path $libB -Filter *.jar | ForEach-Object { $_.Name.Trim().ToLower() }
 
-# Find files in libA that are not in libB
+Write-Host "Total in libA: $($jarA.Count)"
+Write-Host "Total in libB: $($jarB.Count)"
+
+# Do actual comparison
 $missingInB = $jarA | Where-Object { $jarB -notcontains $_ }
 
-# Output the difference
-Write-Host "JARs in libA but missing in libB:`n"
-foreach ($jar in $missingInB) {
-    Write-Host "- $jar"
+Write-Host "`nMissing jars in libB:"
+if ($missingInB.Count -eq 0) {
+    Write-Host "None. All jars are present."
+} else {
+    $missingInB | ForEach-Object { Write-Host "- $_" }
+    Write-Host "`nTotal missing: $($missingInB.Count)"
 }
-
-# Optional: Show count
-Write-Host "`nTotal missing: $($missingInB.Count)"
