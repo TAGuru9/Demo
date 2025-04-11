@@ -1,33 +1,29 @@
-import os
-import json
+# Set your root path
+$rootPath = "C:\Path\To\Your\Environments"
 
-# Root directory containing folders with JSON files
-root_folder = '/path/to/your/folder'
+# Get all matching JSON files recursively
+Get-ChildItem -Path $rootPath -Recurse -Filter "*_env_config.json" | ForEach-Object {
+    $fullPath = $_.FullName
+    $folderName = Split-Path $_.DirectoryName -Leaf
+    $fileName = $_.Name
 
-# List to hold all row data
-table_data = []
+    # Parse Region and Environment from filename
+    $region = ""
+    $env = ""
 
-# Loop through folders and files
-for dirpath, _, filenames in os.walk(root_folder):
-    for file in filenames:
-        if file.endswith('.json'):
-            file_path = os.path.join(dirpath, file)
-            with open(file_path, 'r') as f:
-                try:
-                    data = json.load(f)
-                    # Append each dictionary or item
-                    if isinstance(data, list):
-                        table_data.extend(data)
-                    elif isinstance(data, dict):
-                        table_data.append(data)
-                except json.JSONDecodeError:
-                    print(f"Could not parse {file_path}")
+    if ($fileName -match "^(.+?)_([a-zA-Z0-9]+)?_env_config\.json$") {
+        $region = $matches[1]
+        $env = $matches[2]
+    } elseif ($fileName -match "^(.+?)_env_config\.json$") {
+        $region = $matches[1]
+        $env = "Unknown"
+    }
 
-# Get column headers from keys
-if table_data:
-    headers = table_data[0].keys()
-    print("\t".join(headers))
-    for row in table_data:
-        print("\t".join(str(row.get(col, "")) for col in headers))
-else:
-    print("No JSON data found.")
+    # Output the result
+    [PSCustomObject]@{
+        Folder      = $folderName
+        Region      = $region
+        Environment = $env
+        FullPath    = $fullPath
+    }
+} | Format-Table -AutoSize
