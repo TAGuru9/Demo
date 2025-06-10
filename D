@@ -1,38 +1,31 @@
-# Use TLS 1.2 for secure connections
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-# Initialize global counters
-$global:PASS = 0
-$global:FAIL = 0
-$global:SKIP = 0
+# TLS not needed for Test-NetConnection
 $retryLimit = 3
-
-# Sample website list
 $websites = @{
-    "Health Equity" = "https://my.tes.com"
+    "Health Equity" = "my.healthequity.com"
 }
 
+$global:PASS = 0
+$global:FAIL = 0
 $summary = @()
 $index = 1
 
 foreach ($websiteName in $websites.Keys) {
-    $websiteUrl = $websites[$websiteName]
+    $hostName = $websites[$websiteName]
     $retryAttempt = 1
-    $retrySuccessful = $false
+    $success = $false
 
-    while ($retryAttempt -le $retryLimit -and -not $retrySuccessful) {
+    while ($retryAttempt -le $retryLimit -and -not $success) {
         try {
-            $response = Invoke-WebRequest -Uri $websiteUrl `
-                                          -Headers @{ "User-Agent" = "Mozilla/5.0" } `
-                                          -UseBasicParsing `
-                                          -MaximumRedirection 5
+            $result = Test-NetConnection -ComputerName $hostName -Port 443
 
-            if ($response.StatusCode -eq 200) {
+            if ($result.TcpTestSucceeded) {
                 $status = "Pass"
+                $statusCode = "Connected"
                 $global:PASS++
-                $retrySuccessful = $true
+                $success = $true
             } else {
                 $status = "Fail"
+                $statusCode = "No Connection"
                 $global:FAIL++
             }
 
@@ -40,25 +33,20 @@ foreach ($websiteName in $websites.Keys) {
                 Number        = $index++
                 WebSiteName   = $websiteName
                 Status        = $status
-                Url           = $websiteUrl
-                StatusCode    = $response.StatusCode
+                Url           = "https://$hostName"
+                StatusCode    = $statusCode
                 RetryAttempt  = $retryAttempt
             }
 
             $summary += $websiteInfo
         }
         catch {
-            Write-Host "`nError accessing $websiteUrl:`n$($_.Exception.Message)" -ForegroundColor Red
-            if ($_.Exception.InnerException) {
-                Write-Host "Inner Exception: $($_.Exception.InnerException.Message)" -ForegroundColor Yellow
-            }
-
             $websiteInfo = [pscustomobject]@{
                 Number        = $index++
                 WebSiteName   = $websiteName
                 Status        = "Fail"
-                Url           = $websiteUrl
-                StatusCode    = "N/A"
+                Url           = "https://$hostName"
+                StatusCode    = "Error"
                 RetryAttempt  = $retryAttempt
             }
 
@@ -78,15 +66,14 @@ $summaryTable = $summary | Sort-Object Status | Group-Object Status | ForEach-Ob
     }
 }
 
-# Display summary
+# Display test results
 Write-Host "`n************** Test Results **************" -ForegroundColor Cyan
 $summary | Format-Table -AutoSize
 
+# Display summary
 Write-Host "`n************** Summary **************" -ForegroundColor Cyan
 $summaryTable | Format-Table -AutoSize
 
-# Determine overall status
+# Determine and display overall status
 $overallStatus = if ($summary | Where-Object { $_.Status -eq "Fail" }) { "Fail" } else { "Pass" }
-
-# Display overall status
 Write-Host "`nOverall Automation Status: $overallStatus" -ForegroundColor Green
