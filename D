@@ -1,0 +1,92 @@
+# Use TLS 1.2 for secure connections
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+# Initialize global counters
+$global:PASS = 0
+$global:FAIL = 0
+$global:SKIP = 0
+$retryLimit = 3
+
+# Sample website list
+$websites = @{
+    "Health Equity" = "https://my.tes.com"
+}
+
+$summary = @()
+$index = 1
+
+foreach ($websiteName in $websites.Keys) {
+    $websiteUrl = $websites[$websiteName]
+    $retryAttempt = 1
+    $retrySuccessful = $false
+
+    while ($retryAttempt -le $retryLimit -and -not $retrySuccessful) {
+        try {
+            $response = Invoke-WebRequest -Uri $websiteUrl `
+                                          -Headers @{ "User-Agent" = "Mozilla/5.0" } `
+                                          -UseBasicParsing `
+                                          -MaximumRedirection 5
+
+            if ($response.StatusCode -eq 200) {
+                $status = "Pass"
+                $global:PASS++
+                $retrySuccessful = $true
+            } else {
+                $status = "Fail"
+                $global:FAIL++
+            }
+
+            $websiteInfo = [pscustomobject]@{
+                Number        = $index++
+                WebSiteName   = $websiteName
+                Status        = $status
+                Url           = $websiteUrl
+                StatusCode    = $response.StatusCode
+                RetryAttempt  = $retryAttempt
+            }
+
+            $summary += $websiteInfo
+        }
+        catch {
+            Write-Host "`nError accessing $websiteUrl:`n$($_.Exception.Message)" -ForegroundColor Red
+            if ($_.Exception.InnerException) {
+                Write-Host "Inner Exception: $($_.Exception.InnerException.Message)" -ForegroundColor Yellow
+            }
+
+            $websiteInfo = [pscustomobject]@{
+                Number        = $index++
+                WebSiteName   = $websiteName
+                Status        = "Fail"
+                Url           = $websiteUrl
+                StatusCode    = "N/A"
+                RetryAttempt  = $retryAttempt
+            }
+
+            $summary += $websiteInfo
+            $global:FAIL++
+        }
+
+        $retryAttempt++
+    }
+}
+
+# Summary table
+$summaryTable = $summary | Sort-Object Status | Group-Object Status | ForEach-Object {
+    [pscustomobject]@{
+        Status = $_.Name
+        Count  = $_.Count
+    }
+}
+
+# Display summary
+Write-Host "`n************** Test Results **************" -ForegroundColor Cyan
+$summary | Format-Table -AutoSize
+
+Write-Host "`n************** Summary **************" -ForegroundColor Cyan
+$summaryTable | Format-Table -AutoSize
+
+# Determine overall status
+$overallStatus = if ($summary | Where-Object { $_.Status -eq "Fail" }) { "Fail" } else { "Pass" }
+
+# Display overall status
+Write-Host "`nOverall Automation Status: $overallStatus" -ForegroundColor Green
