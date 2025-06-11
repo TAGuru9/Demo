@@ -1,7 +1,7 @@
 # TLS not needed for Test-NetConnection
 $retryLimit = 3
 $websites = @{
-    "Health Equity" = "my.healthequity.com"
+    "Health Equity" = "my.y.com"
 }
 
 $global:PASS = 0
