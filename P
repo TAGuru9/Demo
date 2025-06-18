@@ -1,0 +1,82 @@
+Sub ExportQADataWithHighlightsFinal()
+    Dim wdApp As Object
+    Dim wdDoc As Object
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+    Dim overallStatus As String
+    Dim statusStart As Long
+    Dim highlightRange As Object
+
+    ' Set worksheet
+    Set ws = ThisWorkbook.Sheets(1)
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+
+    ' Launch Word
+    On Error Resume Next
+    Set wdApp = GetObject(, "Word.Application")
+    If wdApp Is Nothing Then Set wdApp = CreateObject("Word.Application")
+    On Error GoTo 0
+
+    If wdApp Is Nothing Then
+        MsgBox "Word could not start. Please ensure it's installed.", vbCritical
+        Exit Sub
+    End If
+
+    wdApp.Visible = True
+    Set wdDoc = wdApp.Documents.Add
+
+    ' Add heading
+    With wdApp.Selection
+        .TypeText "QA Status Report"
+        .TypeParagraph
+        .TypeParagraph
+    End With
+
+    ' Loop through data
+    For i = 2 To lastRow
+        If Trim(ws.Cells(i, "A").Value) <> "" Then
+            With wdApp.Selection
+                ' Project Title
+                .TypeText (i - 1) & ". " & ws.Cells(i, "A").Value & " – RFC# " & ws.Cells(i, "C").Value
+                .TypeParagraph
+
+                ' Overall Status with highlight
+                overallStatus = Trim(ws.Cells(i, "B").Value)
+                .ListFormat.ApplyBulletDefault
+                .TypeText "Overall Status: " & overallStatus
+                .TypeParagraph
+
+                statusStart = InStr(.Paragraphs.Last.Range.Text, overallStatus)
+                If statusStart > 0 Then
+                    Set highlightRange = .Paragraphs.Last.Range.Duplicate
+                    highlightRange.Start = .Paragraphs.Last.Range.Start + statusStart - 1
+                    highlightRange.End = highlightRange.Start + Len(overallStatus)
+
+                    Select Case LCase(overallStatus)
+                        Case "green": highlightRange.HighlightColorIndex = 4 ' Light green
+                        Case "yellow": highlightRange.HighlightColorIndex = 7 ' Yellow
+                        Case "red": highlightRange.HighlightColorIndex = 6 ' Light red
+                    End Select
+                End If
+
+                ' Other QA Details
+                .ListFormat.ApplyBulletDefault: .TypeText "Tower: " & ws.Cells(i, "D").Value: .TypeParagraph
+                .ListFormat.ApplyBulletDefault: .TypeText "IA Team: " & ws.Cells(i, "E").Value: .TypeParagraph
+                .ListFormat.ApplyBulletDefault: .TypeText "Status: " & ws.Cells(i, "F").Value: .TypeParagraph
+                .ListFormat.ApplyBulletDefault: .TypeText "QA Start: " & Format(ws.Cells(i, "G").Value, "mm/dd/yyyy"): .TypeParagraph
+                .ListFormat.ApplyBulletDefault: .TypeText "Actual QA End: " & Format(ws.Cells(i, "I").Value, "mm/dd/yyyy"): .TypeParagraph
+                .ListFormat.ApplyBulletDefault: .TypeText "Prod Date: " & Format(ws.Cells(i, "K").Value, "mm/dd/yyyy"): .TypeParagraph
+                .ListFormat.ApplyBulletDefault: .TypeText "Defects: " & ws.Cells(i, "P").Value: .TypeParagraph
+                .ListFormat.ApplyBulletDefault: .TypeText "Total TCs: " & ws.Cells(i, "Q").Value: .TypeParagraph
+                .ListFormat.ApplyBulletDefault: .TypeText "Automated TCs: " & ws.Cells(i, "R").Value: .TypeParagraph
+
+                ' Blank line
+                .ListFormat.RemoveNumbers
+                .TypeParagraph
+            End With
+        End If
+    Next i
+
+    MsgBox "✅ QA Report exported to Word with highlights!", vbInformation
+End Sub
