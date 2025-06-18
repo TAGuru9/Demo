@@ -7,13 +7,14 @@ Sub ExportQADataWithHighlights()
     Dim para As Object
     Dim overallStatus As String
     Dim rng As Object
+    Dim highlightRange As Object
     Dim statusStart As Long
 
-    ' Set worksheet and row
+    ' Reference the worksheet
     Set ws = ThisWorkbook.Sheets(1)
     lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
 
-    ' Launch Word safely
+    ' Launch Word
     On Error Resume Next
     Set wdApp = GetObject(, "Word.Application")
     If wdApp Is Nothing Then Set wdApp = CreateObject("Word.Application")
@@ -27,34 +28,35 @@ Sub ExportQADataWithHighlights()
     wdApp.Visible = True
     Set wdDoc = wdApp.Documents.Add
 
+    ' Loop through each row of data
     For i = 2 To lastRow
         If Trim(ws.Cells(i, "A").Value) <> "" Then
-            ' Heading line
+            ' Header
             Set para = wdDoc.Paragraphs.Add
             para.Range.Text = ws.Cells(i, "A").Value & " – RFC# " & ws.Cells(i, "C").Value
             para.Range.ListFormat.ApplyNumberDefault
 
-            ' Overall Status (with highlight)
+            ' Overall Status bullet with color highlight
             overallStatus = Trim(ws.Cells(i, "B").Value)
             Set para = wdDoc.Paragraphs.Add
             para.Range.Text = "Overall Status: " & overallStatus
             para.Range.ListFormat.ApplyBulletDefault
 
-            ' Highlight just the status word
             Set rng = para.Range
             statusStart = InStr(rng.Text, overallStatus)
             If statusStart > 0 Then
-                With rng.Characters(statusStart).Duplicate
-                    .MoveEnd Unit:=1, Count:=Len(overallStatus)
-                    Select Case LCase(overallStatus)
-                        Case "green": .HighlightColorIndex = 4 ' Light Green
-                        Case "red": .HighlightColorIndex = 6 ' Light Red
-                        Case "yellow": .HighlightColorIndex = 7 ' Yellow
-                    End Select
-                End With
+                Set highlightRange = rng.Duplicate
+                highlightRange.Start = rng.Start + statusStart - 1
+                highlightRange.End = highlightRange.Start + Len(overallStatus)
+
+                Select Case LCase(overallStatus)
+                    Case "green": highlightRange.HighlightColorIndex = 4 ' Light Green
+                    Case "red": highlightRange.HighlightColorIndex = 6 ' Light Red
+                    Case "yellow": highlightRange.HighlightColorIndex = 7 ' Yellow
+                End Select
             End If
 
-            ' Other bullets
+            ' Other bullet lines
             Set para = wdDoc.Paragraphs.Add: para.Range.Text = "Tower: " & ws.Cells(i, "D").Value: para.Range.ListFormat.ApplyBulletDefault
             Set para = wdDoc.Paragraphs.Add: para.Range.Text = "IA Team: " & ws.Cells(i, "E").Value: para.Range.ListFormat.ApplyBulletDefault
             Set para = wdDoc.Paragraphs.Add: para.Range.Text = "Status: " & ws.Cells(i, "F").Value: para.Range.ListFormat.ApplyBulletDefault
@@ -65,9 +67,9 @@ Sub ExportQADataWithHighlights()
             Set para = wdDoc.Paragraphs.Add: para.Range.Text = "Total TCs: " & ws.Cells(i, "Q").Value: para.Range.ListFormat.ApplyBulletDefault
             Set para = wdDoc.Paragraphs.Add: para.Range.Text = "Automated TCs: " & ws.Cells(i, "R").Value: para.Range.ListFormat.ApplyBulletDefault
 
-            wdDoc.Paragraphs.Add ' Space between sections
+            wdDoc.Paragraphs.Add ' Extra space
         End If
     Next i
 
-    MsgBox "QA Word export completed successfully!", vbInformation
+    MsgBox "QA Word export completed with highlights!", vbInformation
 End Sub
