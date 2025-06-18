@@ -36,12 +36,13 @@ Sub ExportQADataWithHighlights()
             para.Range.Text = ws.Cells(i, "A").Value & " – RFC# " & ws.Cells(i, "C").Value
             para.Range.ListFormat.ApplyNumberDefault
 
-            ' Overall Status bullet with color highlight
+            ' Overall Status
             overallStatus = Trim(ws.Cells(i, "B").Value)
             Set para = wdDoc.Paragraphs.Add
-            para.Range.Text = "Overall Status: " & overallStatus
             para.Range.ListFormat.ApplyBulletDefault
+            para.Range.Text = "Overall Status: " & overallStatus
 
+            ' Highlight status
             Set rng = para.Range
             statusStart = InStr(rng.Text, overallStatus)
             If statusStart > 0 Then
@@ -50,26 +51,27 @@ Sub ExportQADataWithHighlights()
                 highlightRange.End = highlightRange.Start + Len(overallStatus)
 
                 Select Case LCase(overallStatus)
-                    Case "green": highlightRange.HighlightColorIndex = 4 ' Light Green
-                    Case "red": highlightRange.HighlightColorIndex = 6 ' Light Red
-                    Case "yellow": highlightRange.HighlightColorIndex = 7 ' Yellow
+                    Case "green": highlightRange.HighlightColorIndex = 4
+                    Case "red": highlightRange.HighlightColorIndex = 6
+                    Case "yellow": highlightRange.HighlightColorIndex = 7
                 End Select
             End If
 
-            ' Other bullet lines
-            Set para = wdDoc.Paragraphs.Add: para.Range.Text = "Tower: " & ws.Cells(i, "D").Value: para.Range.ListFormat.ApplyBulletDefault
-            Set para = wdDoc.Paragraphs.Add: para.Range.Text = "IA Team: " & ws.Cells(i, "E").Value: para.Range.ListFormat.ApplyBulletDefault
-            Set para = wdDoc.Paragraphs.Add: para.Range.Text = "Status: " & ws.Cells(i, "F").Value: para.Range.ListFormat.ApplyBulletDefault
-            Set para = wdDoc.Paragraphs.Add: para.Range.Text = "QA Start: " & Format(ws.Cells(i, "G").Value, "mm/dd/yyyy"): para.Range.ListFormat.ApplyBulletDefault
-            Set para = wdDoc.Paragraphs.Add: para.Range.Text = "Actual QA End: " & Format(ws.Cells(i, "I").Value, "mm/dd/yyyy"): para.Range.ListFormat.ApplyBulletDefault
-            Set para = wdDoc.Paragraphs.Add: para.Range.Text = "Prod Date: " & Format(ws.Cells(i, "K").Value, "mm/dd/yyyy"): para.Range.ListFormat.ApplyBulletDefault
-            Set para = wdDoc.Paragraphs.Add: para.Range.Text = "Defects: " & ws.Cells(i, "P").Value: para.Range.ListFormat.ApplyBulletDefault
-            Set para = wdDoc.Paragraphs.Add: para.Range.Text = "Total TCs: " & ws.Cells(i, "Q").Value: para.Range.ListFormat.ApplyBulletDefault
-            Set para = wdDoc.Paragraphs.Add: para.Range.Text = "Automated TCs: " & ws.Cells(i, "R").Value: para.Range.ListFormat.ApplyBulletDefault
+            ' Add remaining lines properly
+            Set para = wdDoc.Paragraphs.Add: para.Range.ListFormat.ApplyBulletDefault: para.Range.Text = "Tower: " & ws.Cells(i, "D").Value
+            Set para = wdDoc.Paragraphs.Add: para.Range.ListFormat.ApplyBulletDefault: para.Range.Text = "IA Team: " & ws.Cells(i, "E").Value
+            Set para = wdDoc.Paragraphs.Add: para.Range.ListFormat.ApplyBulletDefault: para.Range.Text = "Status: " & ws.Cells(i, "F").Value
+            Set para = wdDoc.Paragraphs.Add: para.Range.ListFormat.ApplyBulletDefault: para.Range.Text = "QA Start: " & Format(ws.Cells(i, "G").Value, "mm/dd/yyyy")
+            Set para = wdDoc.Paragraphs.Add: para.Range.ListFormat.ApplyBulletDefault: para.Range.Text = "Actual QA End: " & Format(ws.Cells(i, "I").Value, "mm/dd/yyyy")
+            Set para = wdDoc.Paragraphs.Add: para.Range.ListFormat.ApplyBulletDefault: para.Range.Text = "Prod Date: " & Format(ws.Cells(i, "K").Value, "mm/dd/yyyy")
+            Set para = wdDoc.Paragraphs.Add: para.Range.ListFormat.ApplyBulletDefault: para.Range.Text = "Defects: " & ws.Cells(i, "P").Value
+            Set para = wdDoc.Paragraphs.Add: para.Range.ListFormat.ApplyBulletDefault: para.Range.Text = "Total TCs: " & ws.Cells(i, "Q").Value
+            Set para = wdDoc.Paragraphs.Add: para.Range.ListFormat.ApplyBulletDefault: para.Range.Text = "Automated TCs: " & ws.Cells(i, "R").Value
 
-            wdDoc.Paragraphs.Add ' Extra space
+            ' Add spacing
+            wdDoc.Paragraphs.Add
         End If
     Next i
 
-    MsgBox "QA Word export completed with highlights!", vbInformation
+    MsgBox "Export complete with all details and highlights!", vbInformation
 End Sub
