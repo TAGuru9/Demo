@@ -1,39 +1,58 @@
-Sub ExportQAStatusToWord()
+Sub ExportFormattedQADataToWord()
     Dim wdApp As Object
     Dim wdDoc As Object
     Dim ws As Worksheet
     Dim lastRow As Long
     Dim i As Long
-    Dim output As String
-
-    ' Set the worksheet
+    Dim para As Object
+    Dim statusText As String
+    Dim r As Object
+    
+    ' Setup
     Set ws = ThisWorkbook.Sheets(1)
     lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
 
-    ' Create Word app
+    ' Launch Word
     Set wdApp = CreateObject("Word.Application")
     wdApp.Visible = True
     Set wdDoc = wdApp.Documents.Add
 
-    ' Loop through Excel rows
+    ' Add numbered list
     For i = 2 To lastRow
         If Trim(ws.Cells(i, "A").Value) <> "" Then
-            output = output & "📌 *" & ws.Cells(i, "A").Value & "* – " & ws.Cells(i, "C").Value & vbCrLf
-            output = output & "    • Overall Status: " & ws.Cells(i, "B").Value & vbCrLf
-            output = output & "    • Tower: " & ws.Cells(i, "D").Value & vbCrLf
-            output = output & "    • IA Team: " & ws.Cells(i, "E").Value & vbCrLf
-            output = output & "    • Status: " & ws.Cells(i, "F").Value & vbCrLf
-            output = output & "    • QA Start: " & Format(ws.Cells(i, "G").Value, "mm/dd/yyyy") & vbCrLf
-            output = output & "    • Actual QA End: " & Format(ws.Cells(i, "I").Value, "mm/dd/yyyy") & vbCrLf
-            output = output & "    • Prod Date: " & Format(ws.Cells(i, "K").Value, "mm/dd/yyyy") & vbCrLf
-            output = output & "    • Defects: " & ws.Cells(i, "P").Value & vbCrLf
-            output = output & "    • Total TCs: " & ws.Cells(i, "Q").Value & vbCrLf
-            output = output & "    • Automated TCs: " & ws.Cells(i, "R").Value & vbCrLf & vbCrLf
+            ' Add heading
+            Set para = wdDoc.Paragraphs.Add
+            para.Range.Text = ws.Cells(i, "A").Value & " – RFC# " & ws.Cells(i, "C").Value
+            para.Range.ListFormat.ApplyNumberDefault
+
+            ' Add bullet points
+            Set para = wdDoc.Paragraphs.Add
+            para.Range.Text = "Overall Status: " & ws.Cells(i, "B").Value
+            para.Range.ListFormat.ApplyBulletDefault
+            Set r = para.Range.Words(3) ' "Green"/"Red"/"Yellow"
+            Select Case LCase(ws.Cells(i, "B").Value)
+                Case "green"
+                    r.HighlightColorIndex = 4 ' Light Green
+                Case "red"
+                    r.HighlightColorIndex = 6 ' Light Red
+                Case "yellow"
+                    r.HighlightColorIndex = 7 ' Yellow
+            End Select
+
+            para = wdDoc.Paragraphs.Add: para.Range.Text = "Tower: " & ws.Cells(i, "D").Value: para.Range.ListFormat.ApplyBulletDefault
+            para = wdDoc.Paragraphs.Add: para.Range.Text = "IA Team: " & ws.Cells(i, "E").Value: para.Range.ListFormat.ApplyBulletDefault
+            para = wdDoc.Paragraphs.Add: para.Range.Text = "Status: " & ws.Cells(i, "F").Value: para.Range.ListFormat.ApplyBulletDefault
+            para = wdDoc.Paragraphs.Add: para.Range.Text = "QA Start: " & Format(ws.Cells(i, "G").Value, "mm/dd/yyyy"): para.Range.ListFormat.ApplyBulletDefault
+            para = wdDoc.Paragraphs.Add: para.Range.Text = "Actual QA End: " & Format(ws.Cells(i, "I").Value, "mm/dd/yyyy"): para.Range.ListFormat.ApplyBulletDefault
+            para = wdDoc.Paragraphs.Add: para.Range.Text = "Prod Date: " & Format(ws.Cells(i, "K").Value, "mm/dd/yyyy"): para.Range.ListFormat.ApplyBulletDefault
+            para = wdDoc.Paragraphs.Add: para.Range.Text = "Defects: " & ws.Cells(i, "P").Value: para.Range.ListFormat.ApplyBulletDefault
+            para = wdDoc.Paragraphs.Add: para.Range.Text = "Total TCs: " & ws.Cells(i, "Q").Value: para.Range.ListFormat.ApplyBulletDefault
+            para = wdDoc.Paragraphs.Add: para.Range.Text = "Automated TCs: " & ws.Cells(i, "R").Value: para.Range.ListFormat.ApplyBulletDefault
+
+            ' Add line space
+            wdDoc.Paragraphs.Add
         End If
     Next i
 
-    ' Insert into Word doc
-    wdDoc.Content.InsertAfter output
-
-    MsgBox "QA update exported to Word!", vbInformation
+    MsgBox "QA status exported to Word with formatting and highlights!", vbInformation
 End Sub
