@@ -6,17 +6,30 @@ Sub ExportQADataWithHighlights()
     Dim i As Long
     Dim para As Object
     Dim overallStatus As String
+    Dim rng As Object
+    Dim statusStart As Long
 
+    ' Set worksheet and row
     Set ws = ThisWorkbook.Sheets(1)
     lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
 
-    Set wdApp = CreateObject("Word.Application")
+    ' Launch Word safely
+    On Error Resume Next
+    Set wdApp = GetObject(, "Word.Application")
+    If wdApp Is Nothing Then Set wdApp = CreateObject("Word.Application")
+    On Error GoTo 0
+
+    If wdApp Is Nothing Then
+        MsgBox "Could not start Word. Please make sure Word is installed.", vbCritical
+        Exit Sub
+    End If
+
     wdApp.Visible = True
     Set wdDoc = wdApp.Documents.Add
 
     For i = 2 To lastRow
         If Trim(ws.Cells(i, "A").Value) <> "" Then
-            ' Add header line with numbering
+            ' Heading line
             Set para = wdDoc.Paragraphs.Add
             para.Range.Text = ws.Cells(i, "A").Value & " – RFC# " & ws.Cells(i, "C").Value
             para.Range.ListFormat.ApplyNumberDefault
@@ -26,17 +39,22 @@ Sub ExportQADataWithHighlights()
             Set para = wdDoc.Paragraphs.Add
             para.Range.Text = "Overall Status: " & overallStatus
             para.Range.ListFormat.ApplyBulletDefault
-            With para.Range
-                If LCase(overallStatus) = "green" Then
-                    .Characters(InStr(.Text, overallStatus), Len(overallStatus)).HighlightColorIndex = 4 ' Light Green
-                ElseIf LCase(overallStatus) = "red" Then
-                    .Characters(InStr(.Text, overallStatus), Len(overallStatus)).HighlightColorIndex = 6 ' Light Red
-                ElseIf LCase(overallStatus) = "yellow" Then
-                    .Characters(InStr(.Text, overallStatus), Len(overallStatus)).HighlightColorIndex = 7 ' Yellow
-                End If
-            End With
 
-            ' Other fields
+            ' Highlight just the status word
+            Set rng = para.Range
+            statusStart = InStr(rng.Text, overallStatus)
+            If statusStart > 0 Then
+                With rng.Characters(statusStart).Duplicate
+                    .MoveEnd Unit:=1, Count:=Len(overallStatus)
+                    Select Case LCase(overallStatus)
+                        Case "green": .HighlightColorIndex = 4 ' Light Green
+                        Case "red": .HighlightColorIndex = 6 ' Light Red
+                        Case "yellow": .HighlightColorIndex = 7 ' Yellow
+                    End Select
+                End With
+            End If
+
+            ' Other bullets
             Set para = wdDoc.Paragraphs.Add: para.Range.Text = "Tower: " & ws.Cells(i, "D").Value: para.Range.ListFormat.ApplyBulletDefault
             Set para = wdDoc.Paragraphs.Add: para.Range.Text = "IA Team: " & ws.Cells(i, "E").Value: para.Range.ListFormat.ApplyBulletDefault
             Set para = wdDoc.Paragraphs.Add: para.Range.Text = "Status: " & ws.Cells(i, "F").Value: para.Range.ListFormat.ApplyBulletDefault
@@ -47,9 +65,9 @@ Sub ExportQADataWithHighlights()
             Set para = wdDoc.Paragraphs.Add: para.Range.Text = "Total TCs: " & ws.Cells(i, "Q").Value: para.Range.ListFormat.ApplyBulletDefault
             Set para = wdDoc.Paragraphs.Add: para.Range.Text = "Automated TCs: " & ws.Cells(i, "R").Value: para.Range.ListFormat.ApplyBulletDefault
 
-            wdDoc.Paragraphs.Add ' spacing between entries
+            wdDoc.Paragraphs.Add ' Space between sections
         End If
     Next i
 
-    MsgBox "Export complete with color highlights!", vbInformation
+    MsgBox "QA Word export completed successfully!", vbInformation
 End Sub
