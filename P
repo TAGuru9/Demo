@@ -1,0 +1,39 @@
+Sub ExportQAStatusToWord()
+    Dim wdApp As Object
+    Dim wdDoc As Object
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+    Dim output As String
+
+    ' Set the worksheet
+    Set ws = ThisWorkbook.Sheets(1)
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+
+    ' Create Word app
+    Set wdApp = CreateObject("Word.Application")
+    wdApp.Visible = True
+    Set wdDoc = wdApp.Documents.Add
+
+    ' Loop through Excel rows
+    For i = 2 To lastRow
+        If Trim(ws.Cells(i, "A").Value) <> "" Then
+            output = output & "📌 *" & ws.Cells(i, "A").Value & "* – " & ws.Cells(i, "C").Value & vbCrLf
+            output = output & "    • Overall Status: " & ws.Cells(i, "B").Value & vbCrLf
+            output = output & "    • Tower: " & ws.Cells(i, "D").Value & vbCrLf
+            output = output & "    • IA Team: " & ws.Cells(i, "E").Value & vbCrLf
+            output = output & "    • Status: " & ws.Cells(i, "F").Value & vbCrLf
+            output = output & "    • QA Start: " & Format(ws.Cells(i, "G").Value, "mm/dd/yyyy") & vbCrLf
+            output = output & "    • Actual QA End: " & Format(ws.Cells(i, "I").Value, "mm/dd/yyyy") & vbCrLf
+            output = output & "    • Prod Date: " & Format(ws.Cells(i, "K").Value, "mm/dd/yyyy") & vbCrLf
+            output = output & "    • Defects: " & ws.Cells(i, "P").Value & vbCrLf
+            output = output & "    • Total TCs: " & ws.Cells(i, "Q").Value & vbCrLf
+            output = output & "    • Automated TCs: " & ws.Cells(i, "R").Value & vbCrLf & vbCrLf
+        End If
+    Next i
+
+    ' Insert into Word doc
+    wdDoc.Content.InsertAfter output
+
+    MsgBox "QA update exported to Word!", vbInformation
+End Sub
