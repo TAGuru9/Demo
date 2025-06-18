@@ -5,8 +5,9 @@ Sub ExportQADataWithHighlightsFinal()
     Dim lastRow As Long
     Dim i As Long
     Dim overallStatus As String
-    Dim statusStart As Long
+    Dim paraRange As Object
     Dim highlightRange As Object
+    Dim statusStart As Long
 
     ' Set worksheet
     Set ws = ThisWorkbook.Sheets(1)
@@ -41,26 +42,28 @@ Sub ExportQADataWithHighlightsFinal()
                 .TypeText (i - 1) & ". " & ws.Cells(i, "A").Value & " – RFC# " & ws.Cells(i, "C").Value
                 .TypeParagraph
 
-                ' Overall Status with highlight
+                ' Overall Status with bullet
                 overallStatus = Trim(ws.Cells(i, "B").Value)
                 .ListFormat.ApplyBulletDefault
                 .TypeText "Overall Status: " & overallStatus
                 .TypeParagraph
 
-                statusStart = InStr(.Paragraphs.Last.Range.Text, overallStatus)
+                ' Highlight status
+                Set paraRange = .Paragraphs(1).Range
+                statusStart = InStr(paraRange.Text, overallStatus)
                 If statusStart > 0 Then
-                    Set highlightRange = .Paragraphs.Last.Range.Duplicate
-                    highlightRange.Start = .Paragraphs.Last.Range.Start + statusStart - 1
+                    Set highlightRange = paraRange.Duplicate
+                    highlightRange.Start = paraRange.Start + statusStart - 1
                     highlightRange.End = highlightRange.Start + Len(overallStatus)
 
                     Select Case LCase(overallStatus)
-                        Case "green": highlightRange.HighlightColorIndex = 4 ' Light green
-                        Case "yellow": highlightRange.HighlightColorIndex = 7 ' Yellow
-                        Case "red": highlightRange.HighlightColorIndex = 6 ' Light red
+                        Case "green": highlightRange.HighlightColorIndex = 4
+                        Case "yellow": highlightRange.HighlightColorIndex = 7
+                        Case "red": highlightRange.HighlightColorIndex = 6
                     End Select
                 End If
 
-                ' Other QA Details
+                ' Other bullets
                 .ListFormat.ApplyBulletDefault: .TypeText "Tower: " & ws.Cells(i, "D").Value: .TypeParagraph
                 .ListFormat.ApplyBulletDefault: .TypeText "IA Team: " & ws.Cells(i, "E").Value: .TypeParagraph
                 .ListFormat.ApplyBulletDefault: .TypeText "Status: " & ws.Cells(i, "F").Value: .TypeParagraph
@@ -71,12 +74,11 @@ Sub ExportQADataWithHighlightsFinal()
                 .ListFormat.ApplyBulletDefault: .TypeText "Total TCs: " & ws.Cells(i, "Q").Value: .TypeParagraph
                 .ListFormat.ApplyBulletDefault: .TypeText "Automated TCs: " & ws.Cells(i, "R").Value: .TypeParagraph
 
-                ' Blank line
                 .ListFormat.RemoveNumbers
                 .TypeParagraph
             End With
         End If
     Next i
 
-    MsgBox "✅ QA Report exported to Word with highlights!", vbInformation
+    MsgBox "✅ QA Report exported with color highlights!", vbInformation
 End Sub
