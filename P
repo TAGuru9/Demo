@@ -1,53 +1,56 @@
-Sub ExportQADataToWordSimple()
+Sub ExportQADataToWord_CleanPlainText()
     Dim wdApp As Object
     Dim wdDoc As Object
     Dim ws As Worksheet
     Dim lastRow As Long
     Dim i As Long
     Dim overallStatus As String
+    Dim fullStatusLine As String
     Dim rng As Object
     Dim statusStart As Long
 
-    ' Reference worksheet
+    ' Set worksheet
     Set ws = ThisWorkbook.Sheets(1)
     lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
 
-    ' Launch Word
+    ' Start Word
     On Error Resume Next
     Set wdApp = GetObject(, "Word.Application")
     If wdApp Is Nothing Then Set wdApp = CreateObject("Word.Application")
     On Error GoTo 0
 
     If wdApp Is Nothing Then
-        MsgBox "Could not open Word. Please make sure it is installed.", vbCritical
+        MsgBox "Could not launch Word.", vbCritical
         Exit Sub
     End If
 
     wdApp.Visible = True
     Set wdDoc = wdApp.Documents.Add
 
-    ' Write heading
+    ' Add report heading
     With wdApp.Selection
         .TypeText "QA Status Report"
         .TypeParagraph
         .TypeParagraph
     End With
 
-    ' Loop through rows
+    ' Loop through Excel data
     For i = 2 To lastRow
         If Trim(ws.Cells(i, "A").Value) <> "" Then
             With wdApp.Selection
-                .TypeText (i - 1) & ". " & ws.Cells(i, "A").Value & " – RFC# " & ws.Cells(i, "C").Value
+                ' Header line
+                .TypeText ws.Cells(i, "D").Value & " – " & ws.Cells(i, "A").Value & " – RFC# " & ws.Cells(i, "C").Value
                 .TypeParagraph
 
-                ' Write Overall Status
+                ' Overall Status (highlighted)
                 overallStatus = Trim(ws.Cells(i, "B").Value)
-                .TypeText "Overall Status: " & overallStatus
+                fullStatusLine = "Overall Status: " & overallStatus
+                .TypeText fullStatusLine
                 .TypeParagraph
 
-                ' Highlight just the status word
+                ' Highlight "Green", "Red", or "Yellow"
                 Set rng = wdDoc.Range(wdDoc.Content.Start, wdDoc.Content.End)
-                statusStart = InStrRev(rng.Text, "Overall Status: " & overallStatus)
+                statusStart = InStrRev(rng.Text, fullStatusLine)
                 If statusStart > 0 Then
                     With rng.Characters(statusStart + 16).Duplicate
                         .MoveEnd Unit:=1, Count:=Len(overallStatus)
@@ -59,8 +62,7 @@ Sub ExportQADataToWordSimple()
                     End With
                 End If
 
-                ' Add remaining details
-                .TypeText "Tower: " & ws.Cells(i, "D").Value: .TypeParagraph
+                ' Remaining details (no bullets, no lists)
                 .TypeText "IA Team: " & ws.Cells(i, "E").Value: .TypeParagraph
                 .TypeText "Status: " & ws.Cells(i, "F").Value: .TypeParagraph
                 .TypeText "QA Start: " & Format(ws.Cells(i, "G").Value, "mm/dd/yyyy"): .TypeParagraph
@@ -69,10 +71,13 @@ Sub ExportQADataToWordSimple()
                 .TypeText "Defects: " & ws.Cells(i, "P").Value: .TypeParagraph
                 .TypeText "Total TCs: " & ws.Cells(i, "Q").Value: .TypeParagraph
                 .TypeText "Automated TCs: " & ws.Cells(i, "R").Value: .TypeParagraph
+
+                ' Add spacing
+                .TypeParagraph
                 .TypeParagraph
             End With
         End If
     Next i
 
-    MsgBox "✅ Export completed successfully!", vbInformation
+    MsgBox "✅ QA Report created with clean formatting!", vbInformation
 End Sub
