@@ -1,0 +1,78 @@
+Sub ExportQADataToWordSimple()
+    Dim wdApp As Object
+    Dim wdDoc As Object
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+    Dim overallStatus As String
+    Dim rng As Object
+    Dim statusStart As Long
+
+    ' Reference worksheet
+    Set ws = ThisWorkbook.Sheets(1)
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+
+    ' Launch Word
+    On Error Resume Next
+    Set wdApp = GetObject(, "Word.Application")
+    If wdApp Is Nothing Then Set wdApp = CreateObject("Word.Application")
+    On Error GoTo 0
+
+    If wdApp Is Nothing Then
+        MsgBox "Could not open Word. Please make sure it is installed.", vbCritical
+        Exit Sub
+    End If
+
+    wdApp.Visible = True
+    Set wdDoc = wdApp.Documents.Add
+
+    ' Write heading
+    With wdApp.Selection
+        .TypeText "QA Status Report"
+        .TypeParagraph
+        .TypeParagraph
+    End With
+
+    ' Loop through rows
+    For i = 2 To lastRow
+        If Trim(ws.Cells(i, "A").Value) <> "" Then
+            With wdApp.Selection
+                .TypeText (i - 1) & ". " & ws.Cells(i, "A").Value & " – RFC# " & ws.Cells(i, "C").Value
+                .TypeParagraph
+
+                ' Write Overall Status
+                overallStatus = Trim(ws.Cells(i, "B").Value)
+                .TypeText "Overall Status: " & overallStatus
+                .TypeParagraph
+
+                ' Highlight just the status word
+                Set rng = wdDoc.Range(wdDoc.Content.Start, wdDoc.Content.End)
+                statusStart = InStrRev(rng.Text, "Overall Status: " & overallStatus)
+                If statusStart > 0 Then
+                    With rng.Characters(statusStart + 16).Duplicate
+                        .MoveEnd Unit:=1, Count:=Len(overallStatus)
+                        Select Case LCase(overallStatus)
+                            Case "green": .HighlightColorIndex = 4
+                            Case "yellow": .HighlightColorIndex = 7
+                            Case "red": .HighlightColorIndex = 6
+                        End Select
+                    End With
+                End If
+
+                ' Add remaining details
+                .TypeText "Tower: " & ws.Cells(i, "D").Value: .TypeParagraph
+                .TypeText "IA Team: " & ws.Cells(i, "E").Value: .TypeParagraph
+                .TypeText "Status: " & ws.Cells(i, "F").Value: .TypeParagraph
+                .TypeText "QA Start: " & Format(ws.Cells(i, "G").Value, "mm/dd/yyyy"): .TypeParagraph
+                .TypeText "Actual QA End: " & Format(ws.Cells(i, "I").Value, "mm/dd/yyyy"): .TypeParagraph
+                .TypeText "Prod Date: " & Format(ws.Cells(i, "K").Value, "mm/dd/yyyy"): .TypeParagraph
+                .TypeText "Defects: " & ws.Cells(i, "P").Value: .TypeParagraph
+                .TypeText "Total TCs: " & ws.Cells(i, "Q").Value: .TypeParagraph
+                .TypeText "Automated TCs: " & ws.Cells(i, "R").Value: .TypeParagraph
+                .TypeParagraph
+            End With
+        End If
+    Next i
+
+    MsgBox "✅ Export completed successfully!", vbInformation
+End Sub
