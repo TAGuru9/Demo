@@ -1,13 +1,12 @@
 DECLARE @cols NVARCHAR(MAX), @sql NVARCHAR(MAX);
 
--- Step 1: Get the distinct years from the data
-SELECT @cols = STRING_AGG(QUOTENAME(YEAR(BG_DETECTION_DATE)), ',')
-FROM (
-    SELECT DISTINCT YEAR(BG_DETECTION_DATE) AS Year
+-- Step 1: Get comma-separated year list using FOR XML PATH
+SELECT @cols = STUFF((
+    SELECT DISTINCT ',' + QUOTENAME(YEAR(BG_DETECTION_DATE))
     FROM [amfc_isqat_db].[td].[BUG]
-) AS YearList;
+    FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, '');
 
--- Step 2: Build and execute dynamic pivot query
+-- Step 2: Build the dynamic pivot query
 SET @sql = '
 WITH DefectData AS (
     SELECT 
@@ -22,12 +21,11 @@ WITH DefectData AS (
         ON BUG.BG_DETECTED_IN_REL = RELEASES.REL_ID
     LEFT JOIN amfc_isqat_db.TD.RELEASE_CYCLES AS RELEASE_CYCLES
         ON BUG.BG_DETECTED_IN_RCYC = RELEASE_CYCLES.RCYC_ID
-    GROUP BY 
-        YEAR(BG_DETECTION_DATE),
-        CASE 
-            WHEN BG_USER_37 = ''Y'' THEN ''TA #''
-            ELSE ''Manual #''
-        END
+    GROUP BY YEAR(BG_DETECTION_DATE),
+             CASE 
+                WHEN BG_USER_37 = ''Y'' THEN ''TA #''
+                ELSE ''Manual #''
+             END
 ),
 CombinedData AS (
     SELECT * FROM DefectData
@@ -39,6 +37,7 @@ CombinedData AS (
     FROM DefectData
     GROUP BY Year
 )
+
 SELECT DefectType, ' + @cols + '
 FROM CombinedData
 PIVOT (
@@ -53,5 +52,5 @@ ORDER BY
     END;
 ';
 
--- Step 3: Execute dynamic SQL
+-- Step 3: Execute
 EXEC sp_executesql @sql;
