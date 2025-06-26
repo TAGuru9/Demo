@@ -1,13 +1,16 @@
 DECLARE @cols NVARCHAR(MAX), @sql NVARCHAR(MAX);
 
--- Step 1: Build dynamic year column list in ascending order
+-- Step 1: Build the year list dynamically, sorted ascending (compatible with older SQL Server)
 SELECT @cols = STUFF((
-    SELECT DISTINCT ',' + QUOTENAME(YEAR(BG_DETECTION_DATE))
-    FROM [amfc_isqat_db].[td].[BUG]
-    ORDER BY YEAR(BG_DETECTION_DATE) -- ascending order
+    SELECT ',' + QUOTENAME(Y)
+    FROM (
+        SELECT DISTINCT YEAR(BG_DETECTION_DATE) AS Y
+        FROM [amfc_isqat_db].[td].[BUG]
+    ) AS Years
+    ORDER BY Y
     FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, '');
 
--- Step 2: Build the dynamic pivot query
+-- Step 2: Build dynamic pivot query
 SET @sql = '
 WITH DefectData AS (
     SELECT 
@@ -38,7 +41,6 @@ CombinedData AS (
     FROM DefectData
     GROUP BY Year
 )
-
 SELECT DefectType, ' + @cols + '
 FROM CombinedData
 PIVOT (
