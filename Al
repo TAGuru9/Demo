@@ -1,0 +1,57 @@
+DECLARE @cols NVARCHAR(MAX), @sql NVARCHAR(MAX);
+
+-- Step 1: Get the distinct years from the data
+SELECT @cols = STRING_AGG(QUOTENAME(YEAR(BG_DETECTION_DATE)), ',')
+FROM (
+    SELECT DISTINCT YEAR(BG_DETECTION_DATE) AS Year
+    FROM [amfc_isqat_db].[td].[BUG]
+) AS YearList;
+
+-- Step 2: Build and execute dynamic pivot query
+SET @sql = '
+WITH DefectData AS (
+    SELECT 
+        YEAR(BG_DETECTION_DATE) AS Year,
+        CASE 
+            WHEN BG_USER_37 = ''Y'' THEN ''TA #''
+            ELSE ''Manual #''
+        END AS DefectType,
+        COUNT(*) AS DefectCount
+    FROM [amfc_isqat_db].[td].[BUG] AS BUG
+    LEFT JOIN amfc_isqat_db.TD.RELEASES AS RELEASES
+        ON BUG.BG_DETECTED_IN_REL = RELEASES.REL_ID
+    LEFT JOIN amfc_isqat_db.TD.RELEASE_CYCLES AS RELEASE_CYCLES
+        ON BUG.BG_DETECTED_IN_RCYC = RELEASE_CYCLES.RCYC_ID
+    GROUP BY 
+        YEAR(BG_DETECTION_DATE),
+        CASE 
+            WHEN BG_USER_37 = ''Y'' THEN ''TA #''
+            ELSE ''Manual #''
+        END
+),
+CombinedData AS (
+    SELECT * FROM DefectData
+    UNION ALL
+    SELECT 
+        Year,
+        ''Total'' AS DefectType,
+        SUM(DefectCount) AS DefectCount
+    FROM DefectData
+    GROUP BY Year
+)
+SELECT DefectType, ' + @cols + '
+FROM CombinedData
+PIVOT (
+    SUM(DefectCount)
+    FOR Year IN (' + @cols + ')
+) AS PivotTable
+ORDER BY 
+    CASE DefectType
+        WHEN ''Manual #'' THEN 1
+        WHEN ''TA #'' THEN 2
+        WHEN ''Total'' THEN 3
+    END;
+';
+
+-- Step 3: Execute dynamic SQL
+EXEC sp_executesql @sql;
