@@ -1,9 +1,10 @@
 DECLARE @cols NVARCHAR(MAX), @sql NVARCHAR(MAX);
 
--- Step 1: Get comma-separated year list using FOR XML PATH
+-- Step 1: Build dynamic year column list in ascending order
 SELECT @cols = STUFF((
     SELECT DISTINCT ',' + QUOTENAME(YEAR(BG_DETECTION_DATE))
     FROM [amfc_isqat_db].[td].[BUG]
+    ORDER BY YEAR(BG_DETECTION_DATE) -- ascending order
     FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, '');
 
 -- Step 2: Build the dynamic pivot query
