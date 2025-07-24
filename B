@@ -1,0 +1,21 @@
+$agentName = "my-agent"
+$jenkinsUrl = "http://your-jenkins-url"
+$user = "admin"
+$token = "your-api-token"
+$authHeader = @{
+    Authorization = ("Basic " + [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes("$user:$token")))
+}
+
+while ($true) {
+    try {
+        $response = Invoke-RestMethod -Uri "$jenkinsUrl/computer/$agentName/api/json" -Headers $authHeader
+        if ($response.offline -eq $false) {
+            Write-Host "$(Get-Date): Agent is CONNECTED ✅"
+        } else {
+            Write-Host "$(Get-Date): Agent is OFFLINE ❌"
+        }
+    } catch {
+        Write-Host "$(Get-Date): Error checking agent status ❌"
+    }
+    Start-Sleep -Seconds 10
+}
