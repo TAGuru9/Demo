@@ -1,23 +1,40 @@
-# List of target VMs (use names or IPs)
-$vmList = @("VM-101", "VM-102", "VM-103")  # replace with your actual hostnames or IPs
+# VM list
+$vmList = @("VM-101", "VM-102", "VM-103")  # Replace with your actual VMs
 
-# Prompt for credentials once
-$cred = Get-Credential  # Provide domain\username and password
+# Get credentials once
+$cred = Get-Credential
+
+# Initialize result arrays
+$successList = @()
+$failList = @()
 
 foreach ($vm in $vmList) {
     Write-Host "`nConnecting to $vm..." -ForegroundColor Cyan
 
     try {
         Invoke-Command -ComputerName $vm -Credential $cred -ScriptBlock {
-            # ✅ Command(s) to run on the remote VM
-            Write-Host "Running on: $env:COMPUTERNAME"
+            # 🔧 Remote command(s) to run
+            hostname
             Get-Date
-            Get-Service -Name w32time  # example: check Windows Time service
+            Get-Service -Name w32time
         } -ErrorAction Stop
 
         Write-Host "✅ Success on $vm" -ForegroundColor Green
+        $successList += $vm
     }
     catch {
-        Write-Host "❌ Failed to connect to $vm: $_" -ForegroundColor Red
+        Write-Host "❌ Failed to connect to ${vm}: $_" -ForegroundColor Red
+        $failList += $vm
     }
 }
+
+# 📋 Summary Report
+Write-Host "`n================== SUMMARY ==================" -ForegroundColor Yellow
+Write-Host "✅ PASS:" -ForegroundColor Green
+$successList | ForEach-Object { Write-Host " - $_" }
+
+Write-Host "`n❌ FAIL:" -ForegroundColor Red
+$failList | ForEach-Object { Write-Host " - $_" }
+
+Write-Host "=============================================" -ForegroundColor Yellow
+Write-Host "Total VMs: $($vmList.Count), Passed: $($successList.Count), Failed: $($failList.Count)" -ForegroundColor Cyan
