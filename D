@@ -1,0 +1,23 @@
+# List of target VMs (use names or IPs)
+$vmList = @("VM-101", "VM-102", "VM-103")  # replace with your actual hostnames or IPs
+
+# Prompt for credentials once
+$cred = Get-Credential  # Provide domain\username and password
+
+foreach ($vm in $vmList) {
+    Write-Host "`nConnecting to $vm..." -ForegroundColor Cyan
+
+    try {
+        Invoke-Command -ComputerName $vm -Credential $cred -ScriptBlock {
+            # ✅ Command(s) to run on the remote VM
+            Write-Host "Running on: $env:COMPUTERNAME"
+            Get-Date
+            Get-Service -Name w32time  # example: check Windows Time service
+        } -ErrorAction Stop
+
+        Write-Host "✅ Success on $vm" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "❌ Failed to connect to $vm: $_" -ForegroundColor Red
+    }
+}
