@@ -1,40 +1,19 @@
-# VM list
-$vmList = @("VM-101", "VM-102", "VM-103")  # Replace with your actual VMs
+echo Cleaning up temp directories...
 
-# Get credentials once
-$cred = Get-Credential
+:: Delete temp files from the system and user temp folders
+del /q /f /s "%TEMP%\*" >nul 2>&1
+del /q /f /s "C:\Windows\Temp\*" >nul 2>&1
 
-# Initialize result arrays
-$successList = @()
-$failList = @()
+:: Optional: Remove folders inside TEMP (uncomment if needed)
+:: for /d %%x in ("%TEMP%\*") do rd /s /q "%%x"
+:: for /d %%x in ("C:\Windows\Temp\*") do rd /s /q "%%x"
 
-foreach ($vm in $vmList) {
-    Write-Host "`nConnecting to $vm..." -ForegroundColor Cyan
+echo Temp folders cleaned.
 
-    try {
-        Invoke-Command -ComputerName $vm -Credential $cred -ScriptBlock {
-            # 🔧 Remote command(s) to run
-            hostname
-            Get-Date
-            Get-Service -Name w32time
-        } -ErrorAction Stop
+:: Now run your scripts (example script lines below)
+echo Running your scripts...
+call "C:\Path\To\YourScript1.bat"
+call "C:\Path\To\YourScript2.bat"
 
-        Write-Host "✅ Success on $vm" -ForegroundColor Green
-        $successList += $vm
-    }
-    catch {
-        Write-Host "❌ Failed to connect to ${vm}: $_" -ForegroundColor Red
-        $failList += $vm
-    }
-}
-
-# 📋 Summary Report
-Write-Host "`n================== SUMMARY ==================" -ForegroundColor Yellow
-Write-Host "✅ PASS:" -ForegroundColor Green
-$successList | ForEach-Object { Write-Host " - $_" }
-
-Write-Host "`n❌ FAIL:" -ForegroundColor Red
-$failList | ForEach-Object { Write-Host " - $_" }
-
-Write-Host "=============================================" -ForegroundColor Yellow
-Write-Host "Total VMs: $($vmList.Count), Passed: $($successList.Count), Failed: $($failList.Count)" -ForegroundColor Cyan
+echo Done!
+pause
