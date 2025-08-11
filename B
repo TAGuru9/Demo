@@ -1,0 +1,19 @@
+$year = 2025
+
+# first Monday of the year
+$startDate = Get-Date -Year $year -Month 1 -Day 1
+while ($startDate.DayOfWeek -ne 'Monday') { $startDate = $startDate.AddDays(1) }
+
+while ($startDate.Year -eq $year) {
+    $endDate = $startDate.AddDays(6)
+    New-Object PSObject -Property @{
+        WeekNumber = (Get-Culture).Calendar.GetWeekOfYear(
+            $startDate,
+            [System.Globalization.CalendarWeekRule]::FirstFourDayWeek,
+            [DayOfWeek]::Monday
+        )
+        StartDate  = $startDate.ToString('yyyy-MM-dd')
+        EndDate    = $endDate.ToString('yyyy-MM-dd')
+    } | Format-Table -AutoSize | Out-Host
+    $startDate = $startDate.AddDays(7)
+}
