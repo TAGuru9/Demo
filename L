@@ -1,1 +1,1 @@
-echo "Total RAM: $(grep MemTotal /proc/meminfo | awk '{printf \"%.2f GB\", $2/1024/1024}') | Free RAM: $(grep MemAvailable /proc/meminfo | awk '{printf \"%.2f GB\", $2/1024/1024}') | CPU: $(grep 'model name' /proc/cpuinfo | head -n1 | cut -d: -f2)"
+echo "Total RAM: $(grep MemTotal /proc/meminfo | awk '{printf "%.2f GB", $2/1024/1024}') | Free RAM: $(grep MemAvailable /proc/meminfo | awk '{printf "%.2f GB", $2/1024/1024}') | CPU: $(grep 'model name' /proc/cpuinfo | head -n1 | cut -d: -f2)"
