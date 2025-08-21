@@ -1,23 +1,16 @@
-$y = 2025
-$today = Get-Date
-$d = Get-Date "$y-$($today.Month)-01"
 
-# Find the first Monday of the starting month
-while ($d.DayOfWeek -ne 'Monday') {
-    $d = $d.AddDays(1)
+# --- helpers ----------------------------------------------------------------
+function Get-NonInteractiveCredential {
+    param($UserEnvVar,$PassEnvVar)
+    if ($env:$UserEnvVar -and $env:$PassEnvVar) {
+        $sec = ConvertTo-SecureString $env:$PassEnvVar -AsPlainText -Force
+        return [pscredential]::new($env:$UserEnvVar, $sec)
+    }
+    return $null
 }
 
-# Loop through weeks until end of year
-while ($d.Year -eq $y) {
-    $e = $d.AddDays(6)
-    "{0}_{1}_{2}" -f (
-        (Get-Culture).Calendar.GetWeekOfYear(
-            $d,
-            [System.Globalization.CalendarWeekRule]::FirstFourDayWeek,
-            [DayOfWeek]::Monday
-        ),
-        $d.ToString('yyyy-MM-dd'),
-        $e.ToString('yyyy-MM-dd')
-    )
-    $d = $d.AddDays(7)
-}
+# Prefer parameter, else env vars, else throw (to keep Jenkins non-interactive)
+if (-not $Cred) { $Cred = Get-NonInteractiveCredential -UserEnvVar $UserEnvVar -PassEnvVar $PassEnvVar }
+if (-not $Cred) { throw "No credentials provided. In Jenkins, use withCredentials() to set $UserEnvVar/$PassEnvVar." }
+
+# ScriptBlock th
